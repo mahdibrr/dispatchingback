@@ -1,4 +1,4 @@
-// src/main/java/org/example/security/SecurityConfig.java
+// src/main/java/org/example/shared/security/SecurityConfig.java
 package org.example.shared.security;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -48,6 +49,14 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .httpBasic(httpBasic -> httpBasic.disable())
+            .headers(h -> h
+                .referrerPolicy(r -> r.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                // Durcissement optionnel :
+                //.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'"))
+                //.frameOptions(frame -> frame.sameOrigin())
+                //.xssProtection(xss -> xss.block(true))
+                //.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).preload(true))
+            )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
@@ -55,8 +64,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        if (allowedOrigins.equals("*")) {
-            config.addAllowedOriginPattern("*"); // use patterns to allow credentials with wildcard
+        if ("*".equals(allowedOrigins)) {
+            config.addAllowedOriginPattern("*"); // autoriser les credentials avec wildcard
         } else {
             for (String o : allowedOrigins.split(",")) config.addAllowedOrigin(o.trim());
         }
