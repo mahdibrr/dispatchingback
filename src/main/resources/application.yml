@@ -46,7 +46,10 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:https://frontstage-three.vercel.app}
   jwt:
-    secret: ${APP_JWT_SECRET}
+    # couvre les deux cas de code: soit un secret unique, soit access/refresh distincts
+    secret: ${APP_JWT_SECRET:}
+    access-secret: ${APP_JWT_ACCESS_SECRET:${APP_JWT_SECRET:}}
+    refresh-secret: ${APP_JWT_REFRESH_SECRET:${APP_JWT_SECRET:}}
     ttl-seconds: 86400
   centrifugo:
     api-base: ${CENTRIFUGO_API_BASE}
