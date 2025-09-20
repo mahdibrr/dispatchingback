@@ -15,6 +15,7 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
 
@@ -67,7 +68,12 @@ public class SecurityConfig {
         if ("*".equals(allowedOrigins)) {
             config.addAllowedOriginPattern("*"); // autoriser les credentials avec wildcard
         } else {
-            for (String o : allowedOrigins.split(",")) config.addAllowedOrigin(o.trim());
+            for (String o : allowedOrigins.split(",")) {
+                String origin = o.trim();
+                if (origin.isEmpty()) continue;
+                // use origin patterns so both exact origins and patterns are accepted
+                config.addAllowedOriginPattern(origin);
+            }
         }
         config.setAllowCredentials(true);
         config.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
@@ -76,6 +82,14 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    // Ensure CORS headers are applied as early as possible (handles preflight even when other filters run)
+    @Bean
+    public CorsFilter corsFilter() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", (CorsConfiguration) corsConfigurationSource().getCorsConfiguration(null));
+        return new CorsFilter(source);
     }
 
     @Bean
