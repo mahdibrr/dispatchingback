@@ -13,7 +13,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
@@ -54,18 +53,28 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        if (allowedOrigins.equals("*")) {
-            config.addAllowedOriginPattern("*"); // use patterns to allow credentials with wildcard
+        String origins = (allowedOrigins == null) ? "" : allowedOrigins.trim();
+        if (origins.isEmpty() || origins.equals("*")) {
+            // allow any origin pattern (works with credentials when using patterns)
+            config.addAllowedOriginPattern("*");
         } else {
-            for (String o : allowedOrigins.split(",")) config.addAllowedOrigin(o.trim());
+            for (String o : origins.split(",")) {
+                String v = o.trim();
+                if (v.isEmpty()) continue;
+                // if value contains a wildcard, register as pattern
+                if (v.contains("*")) config.addAllowedOriginPattern(v);
+                else config.addAllowedOrigin(v);
+            }
         }
         config.setAllowCredentials(true);
         config.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("ETag"));
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
+        // Return a simple CorsConfigurationSource that always supplies the same
+        // CorsConfiguration for any incoming request. This avoids UrlBasedCorsConfigurationSource
+        // resolving paths at bean creation time which can trigger ServletRequestPathUtils
+        // and a null-request NullPointerException during context startup.
+        return request -> config;
     }
 
     @Bean
