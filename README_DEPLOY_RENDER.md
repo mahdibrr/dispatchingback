@@ -33,3 +33,15 @@ On Render choose "Existing Image" and point to `docker.io/USER/dispatchingbacken
 
 Health Check Path: `/actuator/health`
 Environment Variables: same as above
+
+Troubleshooting: "no main manifest attribute, in /app/app.jar"
+- Cause: the built JAR is not an executable Spring Boot "fat" jar (missing Main-Class/Start-Class manifest entries).
+- Fixes:
+	- Ensure the Spring Boot Maven plugin is configured in `pom.xml` and that `spring-boot:repackage` runs during the build.
+	- Locally run `mvn -DskipTests package spring-boot:repackage` and verify the produced JAR is executable:
+
+```powershell
+java -jar target\your-app-name.jar
+```
+
+	- The provided `Dockerfile` runs `spring-boot:repackage` before copying the JAR; if your build uses a different packaging step or produces a non-SNAPSHOT jar name, adjust the COPY path accordingly.
