@@ -1,0 +1,23 @@
+name: Warm-up ping
+
+on:
+  schedule:
+    # GitHub Actions cron has 5 minute minimum granularity
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping-warmup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping warmup endpoint
+        run: |
+          echo "Pinging warmup endpoint"
+          curl -fsS --max-time 10 "$ENDPOINT" || exit 0
+        env:
+          # Set this in repository Secrets or Actions variables, e.g. https://render-service.example/warmup
+          ENDPOINT: ${{ secrets.WARMUP_URL }}
+
+# Notes:
+# - GitHub Actions has a minimum cron interval of 5 minutes. For 1-minute pings use an external scheduler
+#   (cron-job.org, UptimeRobot Pro, a small VM, or an external serverless schedule) that supports 1-minute intervals.
